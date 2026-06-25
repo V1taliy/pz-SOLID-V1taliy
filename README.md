@@ -1,71 +1,30 @@
-# Practical lesson pz-SOLID  
-# Практична реалізація SOLID принципів  
+# Практична реалізація SOLID принципів
 
-> У цьому занятті студенти отримують практичні навички застосування SOLID принципів під час рефакторингу існуючого коду.  
-> Мета — створити гнучку, масштабовану та чисту архітектуру шляхом застосування SRP, OCP, LSP, ISP та DIP.
+## Опис проекту
+Цей проект демонструє рефакторинг системи обліку щоденних звітів стану техніки (`DailyLogManager`) згідно з п'ятьма принципами SOLID. 
 
----
+## Аналіз порушень у вихідному коді (`src/original`)
 
-## What need to do:
-* Провести аналіз вихідного «анти-SOLID» коду  
-* Визначити порушення кожного SOLID принципу  
-* Виконати рефакторинг згідно з:
-  * SRP — Single Responsibility Principle  
-  * OCP — Open/Closed Principle  
-  * LSP — Liskov Substitution Principle  
-  * ISP — Interface Segregation Principle  
-  * DIP — Dependency Inversion Principle  
-* Створити відповідні інтерфейси й абстракції  
-* Усунути зайві або циклічні залежності  
-* Додати мінімальний набір unit-тестів після рефакторингу  
+1. **SRP (Single Responsibility Principle):**
+   Клас `DailyLogManager` виконував одразу три задачі: обробляв логіку перевірки техніки, зберігав дані в БД та відправляв SMS. Якщо зміниться спосіб сповіщення, доведеться змінювати логіку класу звітів.
+2. **OCP (Open/Closed Principle):**
+   У методі `processEquipment` використовувався `if/else` для перевірки `type === 'Artillery'`. При додаванні нового типу (наприклад, БПЛА) довелось би змінювати існуючий код.
+3. **LSP (Liskov Substitution Principle):**
+   Транспортні засоби змушені були наслідувати базовий клас `Equipment`, який мав метод `fire()`. Транспорт не може стріляти, що порушує логіку заміщення.
+4. **ISP (Interface Segregation Principle):**
+   Інтерфейс `IEquipmentOperation` був занадто "товстим" і містив одночасно `drive()` та `fire()`. 
+5. **DIP (Dependency Inversion Principle):**
+   `DailyLogManager` безпосередньо створював інстанси `new GoogleSheetsDatabase()` та `new SmsNotifier()`. Високорівневий модуль залежав від низькорівневих деталей.
 
----
+## Результат рефакторингу (`src/refactored`)
 
-## Acceptance criteria
-* Реалізація на мові Typescript 
-* Студент розуміє кожен SOLID принцип та пояснює його застосування  
-* Увесь вихідний код проаналізовано  
-* Усі порушення SOLID знайдено та описано  
-* Після рефакторингу:
-  * Кожен клас має одну відповідальність (SRP)  
-  * Код розширюється через нові класи, а не редагування існуючих (OCP)  
-  * Класи-нащадки повністю заміщають базові (LSP)  
-  * Інтерфейси невеликі й специфічні (ISP)  
-  * Залежності реалізовані через абстракції (DIP)  
-* Код структурований, логічний та зрозумілий  
-* Усі тести проходять успішно  
-* Звіт оформлений у Markdown (README.md)
+* **SRP:** Створено окремі класи для зберігання (`SheetsStorage`) та нотифікацій (`SignalNotifier`). `DailyLogService` відповідає лише за координацію процесу.
+* **OCP:** Замість `if/else` використано поліморфізм. Кожен клас техніки сам реалізує метод `performCheck()`. Додавання нового типу техніки не вимагає змін у `DailyLogService`.
+* **LSP:** Класи `ArtillerySystem` та `TransportVehicle` реалізують лише ті інтерфейси, які мають сенс для їхньої природи.
+* **ISP:** Великий інтерфейс розділено на `IEquipment`, `IMovable` (для транспорту) та `IFirepower` (для артилерії).
+* **DIP:** `DailyLogService` приймає залежності через конструктор (Dependency Injection) у вигляді абстракцій `IStorage` та `INotifier`.
 
-## Directory Structure
-```
-├── pz-SOLID
-│   ├── src
-│   │   ├── original          # код із навмисними порушеннями SOLID
-│   │   ├── refactored        # код після рефакторингу
-│   │   ├── interfaces        # абстракції та інтерфейси
-│   ├── tests
-│   │   ├── refactored.spec.js
-│   ├── .editorconfig
-│   ├── .gitignore
-│   ├── jest.config.js
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── README.md
-└──
-```
-
-## Useful links
-
-[SOLID Principles Explained](https://www.baeldung.com/solid-principles)
-
-[SOLID: The First 5 Principles of Object-Oriented Design](https://www.freecodecamp.org/news/solid-principles-explained-in-plain-english/)
-
-[JavaScript SOLID: Реалізація принципів](https://khalilstemmler.com/articles/solid-principles/)
-
-[Clean Code Concepts Adapted for JavaScript](https://github.com/ryanmcdermott/clean-code-javascript)
-
-[Dependency Injection in JavaScript](https://javascript.plainenglish.io/dependency-injection-in-javascript-1b82a8101c1a)
-
-
-
-
+## Запуск тестів
+```bash
+npm install
+npm test
